@@ -14,7 +14,7 @@ func TestGetProof(t *testing.T) {
 	ethClient, err := geth.NewEthClient(rpcUrl)
 	assert.NoError(t, err)
 
-	proof, err := ethClient.GetProof(context.TODO(), "0xC2f6b569dE849f59f49709cA4A0c5f682AC70241",
+	proof, err := ethClient.GetProof(context.TODO(), "",
 		23340312)
 	assert.NoError(t, err)
 	fmt.Println(proof)
