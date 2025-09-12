@@ -3,7 +3,7 @@ package geth_test
 import (
 	"context"
 	"fmt"
-	"geth-state-trie/geth"
+	"geth-state-trie/internal/geth"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
