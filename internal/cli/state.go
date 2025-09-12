@@ -1,8 +1,9 @@
 package cli
 
 import (
-	"fmt"
+	"log"
 
+	"github.com/inchori/geth-state-trie/internal/geth"
 	"github.com/spf13/cobra"
 )
 
@@ -12,8 +13,17 @@ var stateCmd = &cobra.Command{
 	Use:   "state",
 	Short: "Visualize the state trie for a specific block height",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Visualizing state trie for block: %d\n", blockHeight)
-		fmt.Printf("Using Geth RPC URL: %s\n", rpcURL)
+		client, err := geth.NewEthClient(rpcURL)
+		if err != nil {
+			log.Fatalf("Failed to initialize eth client: %v", err)
+		}
+
+		block, err := client.GetBlockByNumber(cmd.Context(), blockHeight)
+		if err != nil {
+			log.Fatalf("Failed to get block: %v", err)
+		}
+
+		log.Printf("Block %d state root: %s", blockHeight, block.Root().Hex())
 	},
 }
 

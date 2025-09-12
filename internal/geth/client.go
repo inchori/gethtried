@@ -5,33 +5,27 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient/gethclient"
-	"github.com/ethereum/go-ethereum/rpc"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-type EthClient struct {
-	gethRpcClient *gethclient.Client
+type Client struct {
+	ethClient *ethclient.Client
 }
 
-func NewEthClient(rpcUrl string) (*EthClient, error) {
-	client, err := rpc.Dial(rpcUrl)
+func NewEthClient(rpcUrl string) (*Client, error) {
+	ethClient, err := ethclient.Dial(rpcUrl)
 	if err != nil {
 		return nil, fmt.Errorf("failed to dial geth rpc: %v", err)
 	}
-
-	gethRpcClient := gethclient.New(client)
-	return &EthClient{gethRpcClient: gethRpcClient}, nil
+	return &Client{ethClient: ethClient}, nil
 }
 
-func (e *EthClient) GetProof(ctx context.Context, address string, blockNumber int64) (*gethclient.AccountResult, error) {
-	commonAddress := common.HexToAddress(address)
-	intBlockNumber := big.NewInt(blockNumber)
-
-	proof, err := e.gethRpcClient.GetProof(ctx, commonAddress, nil, intBlockNumber)
+func (e *Client) GetBlockByNumber(ctx context.Context, blockHeight int64) (*gethtypes.Block, error) {
+	block, err := e.ethClient.BlockByNumber(ctx, big.NewInt(blockHeight))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get block by number: %v", err)
 	}
 
-	return proof, nil
+	return block, nil
 }
