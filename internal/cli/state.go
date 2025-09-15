@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/inchori/geth-state-trie/internal/geth"
+	"github.com/inchori/geth-state-trie/internal/trie"
 	"github.com/spf13/cobra"
 )
 
@@ -21,16 +23,33 @@ var stateCmd = &cobra.Command{
 			log.Fatalf("Failed to initialize eth client: %v", err)
 		}
 
-		fmt.Printf("Fetching proof for address %s at block %d...\n", accountAddress, blockHeight)
-
 		proofResult, err := client.GetProof(context.Background(), accountAddress, blockHeight)
 		if err != nil {
 			log.Fatalf("Failed to get account proof: %v", err)
 		}
 
-		fmt.Println("\n--- Raw RLP Encoded Trie Nodes ---")
-		for i, rlpNode := range proofResult.AccountProof {
-			fmt.Printf("Node %d: %x\n", i, rlpNode)
+		fmt.Printf("Successfully got %d proof nodes for %s at block %d.\n", len(proofResult.AccountProof), accountAddress, blockHeight)
+		fmt.Println("--- Parsing Trie Nodes ---")
+
+		for i, nodeHexStringBytes := range proofResult.AccountProof {
+			rawData, err := hexutil.Decode(nodeHexStringBytes)
+			if err != nil {
+				log.Fatalf("Node %d: failed to decode hex string from proof: %v", i, err)
+			}
+
+			parsedNode, err := trie.ParseNode(rawData)
+			if err != nil {
+				log.Fatalf("Node %d: failed to parse RLP data: %v", i, err)
+			}
+			fmt.Printf("[Node %d] Parsed Type: %s\n", i, parsedNode.Type())
+			switch node := parsedNode.(type) {
+			case *trie.LeafNode:
+				fmt.Printf("   └── Leaf Node. Value Length: %d bytes\n", len(node.Value))
+			case *trie.ExtensionNode:
+				fmt.Printf("   └── Extension Node. Next Node Hash: %x\n", node.NextNode)
+			case *trie.BranchNode:
+				fmt.Printf("   └── Branch Node. Has Value: %t\n", len(node.Value) > 0)
+			}
 		}
 	},
 }
