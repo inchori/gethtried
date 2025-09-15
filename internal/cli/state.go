@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/inchori/geth-state-trie/internal/geth"
 	"github.com/inchori/geth-state-trie/internal/trie"
 	"github.com/spf13/cobra"
@@ -44,7 +45,16 @@ var stateCmd = &cobra.Command{
 			fmt.Printf("[Node %d] Parsed Type: %s\n", i, parsedNode.Type())
 			switch node := parsedNode.(type) {
 			case *trie.LeafNode:
-				fmt.Printf("   └── Leaf Node. Value Length: %d bytes\n", len(node.Value))
+				var accountData trie.Account
+				if err := rlp.DecodeBytes(node.Value, &accountData); err != nil {
+					log.Fatalf("Node %d: failed to decode account RLP data: %v", i, err)
+				} else {
+					fmt.Printf("   └── Leaf Node. Value (82 bytes) Decoded:\n")
+					fmt.Printf("       - Nonce:       %d\n", accountData.Nonce)
+					fmt.Printf("       - Balance:     %s (wei)\n", accountData.Balance.String())
+					fmt.Printf("       - StorageRoot: %s\n", accountData.Root.Hex())
+					fmt.Printf("       - CodeHash:    %s\n", accountData.CodeHash.Hex())
+				}
 			case *trie.ExtensionNode:
 				fmt.Printf("   └── Extension Node. Next Node Hash: %x\n", node.NextNode)
 			case *trie.BranchNode:
