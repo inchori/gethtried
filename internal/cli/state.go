@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"context"
+	"fmt"
 	"log"
 
 	"github.com/inchori/geth-state-trie/internal/geth"
@@ -8,6 +10,7 @@ import (
 )
 
 var blockHeight int64
+var accountAddress string
 
 var stateCmd = &cobra.Command{
 	Use:   "state",
@@ -18,17 +21,24 @@ var stateCmd = &cobra.Command{
 			log.Fatalf("Failed to initialize eth client: %v", err)
 		}
 
-		block, err := client.GetBlockByNumber(cmd.Context(), blockHeight)
+		fmt.Printf("Fetching proof for address %s at block %d...\n", accountAddress, blockHeight)
+
+		proofResult, err := client.GetProof(context.Background(), accountAddress, blockHeight)
 		if err != nil {
-			log.Fatalf("Failed to get block: %v", err)
+			log.Fatalf("Failed to get account proof: %v", err)
 		}
 
-		log.Printf("Block %d state root: %s", blockHeight, block.Root().Hex())
+		fmt.Println("\n--- Raw RLP Encoded Trie Nodes ---")
+		for i, rlpNode := range proofResult.AccountProof {
+			fmt.Printf("Node %d: %x\n", i, rlpNode)
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(stateCmd)
-	stateCmd.Flags().Int64Var(&blockHeight, "MarkFlagRequired", 0, "Block height to visualize the state trie (required)")
+	stateCmd.Flags().Int64Var(&blockHeight, "block-height", 0, "Block height (required)")
+	stateCmd.Flags().StringVar(&accountAddress, "account-address", "", "Account address to inspect (required)")
 	stateCmd.MarkFlagRequired("block-height")
+	stateCmd.MarkFlagRequired("account-address")
 }
