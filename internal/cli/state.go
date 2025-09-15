@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/inchori/geth-state-trie/internal/geth"
+	"github.com/inchori/geth-state-trie/internal/render"
 	"github.com/inchori/geth-state-trie/internal/trie"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +31,9 @@ var stateCmd = &cobra.Command{
 		}
 
 		fmt.Printf("Successfully got %d proof nodes for %s at block %d.\n", len(proofResult.AccountProof), accountAddress, blockHeight)
-		fmt.Println("--- Parsing Trie Nodes ---")
+
+		var parsedNodeList []trie.Node
+		var finalAccountData *trie.Account
 
 		for i, nodeHexStringBytes := range proofResult.AccountProof {
 			rawData, err := hexutil.Decode(nodeHexStringBytes)
@@ -42,25 +45,17 @@ var stateCmd = &cobra.Command{
 			if err != nil {
 				log.Fatalf("Node %d: failed to parse RLP data: %v", i, err)
 			}
-			fmt.Printf("[Node %d] Parsed Type: %s\n", i, parsedNode.Type())
-			switch node := parsedNode.(type) {
-			case *trie.LeafNode:
+
+			parsedNodeList = append(parsedNodeList, parsedNode)
+
+			if leafNode, ok := parsedNode.(*trie.LeafNode); ok {
 				var accountData trie.Account
-				if err := rlp.DecodeBytes(node.Value, &accountData); err != nil {
-					log.Fatalf("Node %d: failed to decode account RLP data: %v", i, err)
-				} else {
-					fmt.Printf("   └── Leaf Node. Value (82 bytes) Decoded:\n")
-					fmt.Printf("       - Nonce:       %d\n", accountData.Nonce)
-					fmt.Printf("       - Balance:     %s (wei)\n", accountData.Balance.String())
-					fmt.Printf("       - StorageRoot: %s\n", accountData.Root.Hex())
-					fmt.Printf("       - CodeHash:    %s\n", accountData.CodeHash.Hex())
+				if err := rlp.DecodeBytes(leafNode.Value, &accountData); err == nil {
+					finalAccountData = &accountData
 				}
-			case *trie.ExtensionNode:
-				fmt.Printf("   └── Extension Node. Next Node Hash: %x\n", node.NextNode)
-			case *trie.BranchNode:
-				fmt.Printf("   └── Branch Node. Has Value: %t\n", len(node.Value) > 0)
 			}
 		}
+		render.RenderProofPath(parsedNodeList, finalAccountData)
 	},
 }
 
