@@ -18,14 +18,14 @@ var accountAddress string
 
 var stateCmd = &cobra.Command{
 	Use:   "state",
-	Short: "Visualize the state trie for a specific block height",
+	Short: "Visualize the state trie for a specific account at a specific block height",
 	Run: func(cmd *cobra.Command, args []string) {
 		client, err := geth.NewEthClient(rpcURL)
 		if err != nil {
 			log.Fatalf("Failed to initialize eth client: %v", err)
 		}
 
-		proofResult, err := client.GetProof(context.Background(), accountAddress, blockHeight)
+		proofResult, err := client.GetAccountProof(context.Background(), accountAddress, blockHeight)
 		if err != nil {
 			log.Fatalf("Failed to get account proof: %v", err)
 		}

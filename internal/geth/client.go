@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
@@ -32,15 +33,36 @@ func (e *Client) GetBlockByNumber(ctx context.Context, blockHeight int64) (*geth
 	return block, nil
 }
 
-func (e *Client) GetProof(ctx context.Context, address string, blockNumber int64) (*gethclient.AccountResult, error) {
+func (e *Client) GetAccountProof(ctx context.Context, address string, blockNumber int64) (*gethclient.AccountResult, error) {
 	accountAddress := common.HexToAddress(address)
 	blockNumBig := big.NewInt(blockNumber)
 
 	gethClient := gethclient.New(e.ethClient.Client())
-	proof, err := gethClient.GetProof(ctx, accountAddress, nil, blockNumBig)
+	accountProof, err := gethClient.GetProof(ctx, accountAddress, nil, blockNumBig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get proof for account %s at block #%d: %v", address, blockNumber, err)
 	}
 
-	return proof, nil
+	return accountProof, nil
+}
+
+func (e *Client) GetStorageProof(ctx context.Context, address string, slot int64, blockNumber int64) (*gethclient.AccountResult, error) {
+	accountAddress := common.HexToAddress(address)
+	blockNumBig := big.NewInt(blockNumber)
+
+	gethClient := gethclient.New(e.ethClient.Client())
+
+	slotBigInt := big.NewInt(slot)
+	slotBytes := slotBigInt.Bytes()
+	paddedSlotBytes := common.LeftPadBytes(slotBytes, 32)
+	slotHex := hexutil.Encode(paddedSlotBytes)
+
+	keys := []string{slotHex}
+
+	storageProof, err := gethClient.GetProof(ctx, accountAddress, keys, blockNumBig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get storage proof for account %s at block #%d: %v", address, blockNumber, err)
+	}
+
+	return storageProof, nil
 }
