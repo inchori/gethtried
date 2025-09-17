@@ -26,14 +26,20 @@ var txCmd = &cobra.Command{
 		}
 		expectedRoot := block.Header().TxHash
 		transactions := block.Transactions()
-		calculatedRoot := gethtypes.DeriveSha(transactions, new(gethtrie.Trie))
+
+		calculatedRoot := gethtypes.DeriveSha(transactions, gethtrie.NewStackTrie(nil))
 
 		fmt.Printf("Block Header TxRoot: %s\n", expectedRoot.Hex())
 		fmt.Printf("Calculated TxRoot:   %s\n", calculatedRoot.Hex())
 		if expectedRoot == calculatedRoot {
-			fmt.Println("✅ Verification Successful!")
+			fmt.Println("Verification Successful!")
 		} else {
-			fmt.Println("❌ Verification FAILED!")
+			fmt.Println("Verification FAILED!")
+		}
+
+		fmt.Println("\n--- Transactions in Trie (Key: RLP(index)) ---")
+		for i, tx := range transactions {
+			fmt.Printf("  [Idx %d] TxHash: %s\n", i, tx.Hash().Hex())
 		}
 	},
 }
