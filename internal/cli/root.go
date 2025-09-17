@@ -7,6 +7,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	rpcURL         string
+	blockHeight    int64
+	accountAddress string
+)
+
 var rootCmd = &cobra.Command{
 	Use:   "gethtried",
 	Short: "A CLI tool to visualize Ethereum Tries from a Geth archive node.",
@@ -21,8 +27,11 @@ func Execute() {
 	}
 }
 
-var rpcURL string
-
 func init() {
 	rootCmd.PersistentFlags().StringVar(&rpcURL, "rpc-url", "http://localhost:8545", "Geth Archive Node RPC URL")
+	rootCmd.PersistentFlags().Int64Var(&blockHeight, "block-height", 0, "Block height (required)")
+	rootCmd.PersistentFlags().StringVar(&accountAddress, "account-address", "", "Account address to inspect (required)")
+
+	rootCmd.MarkFlagRequired("block-height")
+	rootCmd.MarkFlagRequired("account-address")
 }

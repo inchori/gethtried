@@ -13,9 +13,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var blockHeight int64
-var accountAddress string
-
 var stateCmd = &cobra.Command{
 	Use:   "state",
 	Short: "Visualize the state trie for a specific account at a specific block height",
@@ -61,8 +58,4 @@ var stateCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(stateCmd)
-	stateCmd.Flags().Int64Var(&blockHeight, "block-height", 0, "Block height (required)")
-	stateCmd.Flags().StringVar(&accountAddress, "account-address", "", "Account address to inspect (required)")
-	stateCmd.MarkFlagRequired("block-height")
-	stateCmd.MarkFlagRequired("account-address")
 }

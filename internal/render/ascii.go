@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/inchori/geth-state-trie/internal/trie"
 )
 
-func RenderProofPath(pathNodes []trie.Node, accountData *trie.Account) {
+func RenderProofPath(pathNodes []trie.Node, value interface{}) {
 	fmt.Println("--- ASCII Trie Path Visualization ---")
 
 	indent := "  "
@@ -23,15 +24,20 @@ func RenderProofPath(pathNodes []trie.Node, accountData *trie.Account) {
 
 		switch n := node.(type) {
 		case *trie.LeafNode:
-			if accountData != nil {
-				weiFloat := new(big.Float).SetInt(accountData.Balance)
+			switch val := value.(type) {
+			case *trie.Account:
+				weiFloat := new(big.Float).SetInt(val.Balance)
 				ethConstantFloat := new(big.Float).SetInt64(params.Ether)
 				ethValue := new(big.Float).Quo(weiFloat, ethConstantFloat)
 
-				fmt.Printf("%s   - Nonce:       %d\n", indent, accountData.Nonce)
-				fmt.Printf("%s   - Balance:     %s ETH\n", indent, ethValue.Text('f', 6)) // 6자리로 축소
-				fmt.Printf("%s   - StorageRoot: %s\n", indent, accountData.Root.Hex())
-				fmt.Printf("%s   - CodeHash:    %s\n", indent, accountData.CodeHash.Hex())
+				fmt.Printf("%s   - Nonce:       %d\n", indent, val.Nonce)
+				fmt.Printf("%s   - Balance:     %s ETH\n", indent, ethValue.Text('f', 6))
+				fmt.Printf("%s   - StorageRoot: %s\n", indent, val.Root.Hex())
+				fmt.Printf("%s   - CodeHash:    %s\n", indent, val.CodeHash.Hex())
+			case []byte:
+				fmt.Printf("%s   - Value (32 bytes): %s\n", indent, hexutil.Encode(val))
+			default:
+				fmt.Printf("%s   -  Raw Value: %v\n", indent, n.Value)
 			}
 		case *trie.ExtensionNode:
 			fmt.Printf("%s   - Next Hash: %x\n", indent, n.NextNode)
