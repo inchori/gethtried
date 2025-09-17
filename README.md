@@ -7,7 +7,7 @@ A Go-based CLI tool for visualizing Ethereum's Merkle Patricia Tries directly fr
 ## Features
 
 -   [x] **State Trie Visualization:** Visualize the Merkle proof path for any account (`eth_getProof`) at any historical block height.
--   [ ] **Storage Trie Visualization:** (Upcoming) Inspect the storage trie proof for a specific contract address and slot.
+-   [x] **Storage Trie Visualization:** Inspect the storage trie proof for a specific contract address and slot.
 -   [ ] **Transaction Trie Visualization:** (Upcoming) Render the transaction trie for a given block.
 -   [ ] **Receipts Trie Visualization:** (Upcoming) Render the receipts trie for a given block.
 
