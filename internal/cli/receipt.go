@@ -26,16 +26,13 @@ var receiptCmd = &cobra.Command{
 		}
 
 		expectedRoot := block.Header().ReceiptHash
-		transactions := block.Transactions()
 
-		var receipts types.Receipts
-		for _, tx := range transactions {
-			receipt, err := client.GetTransactionReceipt(context.Background(), tx.Hash())
-			if err != nil {
-				log.Fatalf("Failed to build receipt list: %v", err)
-			}
-			receipts = append(receipts, receipt)
+		blockReceipts, err := client.GetBlockReceipts(context.Background(), blockHeight)
+		if err != nil {
+			log.Fatalf("Failed to get block receipts: %v", err)
 		}
+
+		var receipts types.Receipts = blockReceipts
 		fmt.Printf("Successfully fetched %d receipts for block %d.\n", len(receipts), blockHeight)
 
 		calculatedRoot := types.DeriveSha(receipts, trie.NewStackTrie(nil))

@@ -10,6 +10,7 @@ import (
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 type Client struct {
@@ -40,6 +41,17 @@ func (e *Client) GetTransactionReceipt(ctx context.Context, txHash common.Hash) 
 	}
 
 	return txReceipt, nil
+}
+
+func (e *Client) GetBlockReceipts(ctx context.Context, blockHeight int64) ([]*gethtypes.Receipt, error) {
+	blockNumber := rpc.BlockNumber(blockHeight)
+	blockNumberOrHash := rpc.BlockNumberOrHash{BlockNumber: &blockNumber}
+	receipts, err := e.ethClient.BlockReceipts(ctx, blockNumberOrHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get block receipts: %v", err)
+	}
+	
+	return receipts, nil
 }
 
 func (e *Client) GetAccountProof(ctx context.Context, address string, blockNumber int64) (*gethclient.AccountResult, error) {
