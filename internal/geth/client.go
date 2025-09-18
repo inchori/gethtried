@@ -33,6 +33,15 @@ func (e *Client) GetBlockByNumber(ctx context.Context, blockHeight int64) (*geth
 	return block, nil
 }
 
+func (e *Client) GetTransactionReceipt(ctx context.Context, txHash common.Hash) (*gethtypes.Receipt, error) {
+	txReceipt, err := e.ethClient.TransactionReceipt(ctx, txHash)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tx receipt: %v", err)
+	}
+
+	return txReceipt, nil
+}
+
 func (e *Client) GetAccountProof(ctx context.Context, address string, blockNumber int64) (*gethclient.AccountResult, error) {
 	accountAddress := common.HexToAddress(address)
 	blockNumBig := big.NewInt(blockNumber)
