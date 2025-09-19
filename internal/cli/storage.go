@@ -3,12 +3,14 @@ package cli
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+	ethtrie "github.com/ethereum/go-ethereum/trie"
 	"github.com/inchori/geth-state-trie/internal/geth"
 	"github.com/inchori/geth-state-trie/internal/render"
 	"github.com/inchori/geth-state-trie/internal/trie"
@@ -35,18 +37,19 @@ var storageCmd = &cobra.Command{
 			log.Fatalf("No storage proof returned for slot %d", storageSlot)
 		}
 
-		startRootKey := storageProof.StorageHash
-
+		storageRoot := storageProof.StorageHash
 		slotKey := common.LeftPadBytes(big.NewInt(storageSlot).Bytes(), 32)
 		targetPathHash := crypto.Keccak256Hash(slotKey)
 		targetPathNibbles := hex.EncodeToString(targetPathHash.Bytes())
 
+		var proofBytes [][]byte
 		proofMap := make(map[string]trie.RenderNodeData)
 		storagePathNodes := storageProof.StorageProof[0].Proof
 		var finalStorageValue []byte
 
 		for _, nodeHexBytes := range storagePathNodes {
 			rawData, _ := hexutil.Decode(nodeHexBytes)
+			proofBytes = append(proofBytes, rawData)
 			nodeKey := crypto.Keccak256Hash(rawData)
 			parsedNode, _ := trie.ParseNode(rawData)
 
@@ -56,7 +59,33 @@ var storageCmd = &cobra.Command{
 				finalStorageValue = leaf.Value
 			}
 		}
-		render.RenderLogicalPath(startRootKey, targetPathNibbles, proofMap, finalStorageValue)
+
+		fmt.Printf("\n--- Storage Proof Verification ---\n")
+
+		proofDB := make(map[string][]byte)
+		for _, nodeBytes := range proofBytes {
+			key := crypto.Keccak256Hash(nodeBytes)
+			proofDB[string(key[:])] = nodeBytes
+		}
+
+		verifiedValue, err := ethtrie.VerifyProof(storageRoot, targetPathHash.Bytes(), &MapDB{data: proofDB})
+		if err != nil {
+			fmt.Printf("STORAGE PROOF VERIFICATION FAILED: %v\n", err)
+		} else {
+			fmt.Printf("STORAGE PROOF VERIFICATION SUCCESSFUL\n")
+			if len(verifiedValue) > 0 {
+				fmt.Printf("   Storage Value: %s\n", hexutil.Encode(verifiedValue))
+				if len(verifiedValue) == 32 {
+					storageInt := new(big.Int).SetBytes(verifiedValue)
+					fmt.Printf("   As Integer: %s\n", storageInt.String())
+				}
+			} else {
+				fmt.Printf("   Storage slot is empty\n")
+			}
+		}
+
+		fmt.Printf("\n--- Storage Trie Path Visualization ---\n")
+		render.RenderLogicalPath(storageRoot, targetPathNibbles, proofMap, finalStorageValue)
 	},
 }
 
