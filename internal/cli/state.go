@@ -2,9 +2,11 @@ package cli
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"log"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -31,7 +33,7 @@ var stateCmd = &cobra.Command{
 		fmt.Printf("Successfully got %d proof nodes for %s at block %d.\n", len(proofResult.AccountProof), accountAddress, blockHeight)
 
 		//var parsedNodeList []trie.Node
-		var renderNodeList []trie.RenderNode
+		var renderNodeList []trie.RenderNodeData
 		//var finalAccountData *trie.Account
 
 		var finalValue interface{}
@@ -42,14 +44,14 @@ var stateCmd = &cobra.Command{
 				log.Fatalf("Node %d: failed to decode hex string from proof: %v", i, err)
 			}
 
-			nodeKey := crypto.Keccak256(rawData)
+			nodeKey := crypto.Keccak256Hash(rawData)
 
 			parsedNode, err := trie.ParseNode(rawData)
 			if err != nil {
 				log.Fatalf("Failed to parse RLP data: %v", err)
 			}
 
-			renderNodeList = append(renderNodeList, trie.RenderNode{
+			renderNodeList = append(renderNodeList, trie.RenderNodeData{
 				Key:  nodeKey,
 				Node: parsedNode,
 			})
@@ -61,7 +63,18 @@ var stateCmd = &cobra.Command{
 				}
 			}
 		}
-		render.RenderProofPath(renderNodeList, finalValue)
+
+		targetPathHash := crypto.Keccak256(common.HexToAddress(accountAddress).Bytes())
+		targetPathNibbles := hex.EncodeToString(targetPathHash)
+
+		proofMap := make(map[string]trie.RenderNodeData)
+		for _, rn := range renderNodeList {
+			proofMap[rn.Key.String()] = rn
+		}
+
+		startRootKey := renderNodeList[0].Key
+		//render.RenderProofPath(renderNodeList, finalValue)
+		render.RenderLogicalPath(startRootKey, targetPathNibbles, proofMap, finalValue)
 	},
 }
 
