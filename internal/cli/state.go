@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/inchori/geth-state-trie/internal/geth"
 	"github.com/inchori/geth-state-trie/internal/render"
@@ -29,8 +30,11 @@ var stateCmd = &cobra.Command{
 
 		fmt.Printf("Successfully got %d proof nodes for %s at block %d.\n", len(proofResult.AccountProof), accountAddress, blockHeight)
 
-		var parsedNodeList []trie.Node
-		var finalAccountData *trie.Account
+		//var parsedNodeList []trie.Node
+		var renderNodeList []trie.RenderNode
+		//var finalAccountData *trie.Account
+
+		var finalValue interface{}
 
 		for i, nodeHexStringBytes := range proofResult.AccountProof {
 			rawData, err := hexutil.Decode(nodeHexStringBytes)
@@ -38,21 +42,26 @@ var stateCmd = &cobra.Command{
 				log.Fatalf("Node %d: failed to decode hex string from proof: %v", i, err)
 			}
 
+			nodeKey := crypto.Keccak256(rawData)
+
 			parsedNode, err := trie.ParseNode(rawData)
 			if err != nil {
-				log.Fatalf("Node %d: failed to parse RLP data: %v", i, err)
+				log.Fatalf("Failed to parse RLP data: %v", err)
 			}
 
-			parsedNodeList = append(parsedNodeList, parsedNode)
+			renderNodeList = append(renderNodeList, trie.RenderNode{
+				Key:  nodeKey,
+				Node: parsedNode,
+			})
 
 			if leafNode, ok := parsedNode.(*trie.LeafNode); ok {
 				var accountData trie.Account
 				if err := rlp.DecodeBytes(leafNode.Value, &accountData); err == nil {
-					finalAccountData = &accountData
+					finalValue = &accountData
 				}
 			}
 		}
-		render.RenderProofPath(parsedNodeList, finalAccountData)
+		render.RenderProofPath(renderNodeList, finalValue)
 	},
 }
 

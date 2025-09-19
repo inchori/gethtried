@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/inchori/geth-state-trie/internal/geth"
 	"github.com/inchori/geth-state-trie/internal/render"
 	"github.com/inchori/geth-state-trie/internal/trie"
@@ -33,8 +34,10 @@ var storageCmd = &cobra.Command{
 
 		log.Printf("Successfully got %d proof nodes for storage slot %d of account %s at block %d.\n", len(storageProof.StorageProof[0].Proof), storageSlot, accountAddress, blockHeight)
 
-		var parsedNodeList []trie.Node
-		var finalStorageValue []byte
+		//var parsedNodeList []trie.Node
+		var renderNodeList []trie.RenderNode
+		//var finalStorageValue []byte
+		var finalValue interface{}
 
 		storageProofPath := storageProof.StorageProof[0].Proof
 
@@ -44,18 +47,23 @@ var storageCmd = &cobra.Command{
 				log.Fatalf("Node %d: failed to decode hex string from proof: %v", i, err)
 			}
 
+			nodeKey := crypto.Keccak256(rawData)
+
 			parsedNode, err := trie.ParseNode(rawData)
 			if err != nil {
 				log.Fatalf("Node %d: failed to parse RLP data: %v", i, err)
 			}
 
-			parsedNodeList = append(parsedNodeList, parsedNode)
+			renderNodeList = append(renderNodeList, trie.RenderNode{
+				Key:  nodeKey,
+				Node: parsedNode,
+			})
 
 			if leafNode, ok := parsedNode.(*trie.LeafNode); ok {
-				finalStorageValue = leafNode.Value
+				finalValue = leafNode.Value
 			}
 		}
-		render.RenderProofPath(parsedNodeList, finalStorageValue)
+		render.RenderProofPath(renderNodeList, finalValue)
 	},
 }
 

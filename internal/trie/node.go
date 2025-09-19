@@ -19,6 +19,11 @@ type LeafNode struct {
 	Value   []byte
 }
 
+type RenderNode struct {
+	Key  []byte
+	Node Node
+}
+
 func (b *BranchNode) Type() string { return "Branch" }
 
 func (e *ExtensionNode) Type() string { return "Extension" }
