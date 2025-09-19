@@ -49,4 +49,5 @@ var receiptCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(receiptCmd)
+	receiptCmd.MarkFlagRequired("block-height")
 }

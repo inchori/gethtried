@@ -80,4 +80,6 @@ var stateCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(stateCmd)
+	stateCmd.MarkFlagRequired("block-height")
+	stateCmd.MarkFlagRequired("account-address")
 }

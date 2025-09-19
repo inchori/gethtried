@@ -31,7 +31,4 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&rpcURL, "rpc-url", "http://localhost:8545", "Geth Archive Node RPC URL")
 	rootCmd.PersistentFlags().Int64Var(&blockHeight, "block-height", 0, "Block height (required)")
 	rootCmd.PersistentFlags().StringVar(&accountAddress, "account-address", "", "Account address to inspect (required)")
-
-	rootCmd.MarkFlagRequired("block-height")
-	rootCmd.MarkFlagRequired("account-address")
 }

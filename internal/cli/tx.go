@@ -46,4 +46,5 @@ var txCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(txCmd)
+	txCmd.MarkFlagRequired("block-height")
 }

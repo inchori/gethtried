@@ -62,7 +62,8 @@ var storageCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(storageCmd)
-
 	storageCmd.Flags().Int64Var(&storageSlot, "slot", 0, "Storage slot (required)")
+	storageCmd.MarkFlagRequired("block-height")
+	storageCmd.MarkFlagRequired("account-address")
 	storageCmd.MarkFlagRequired("slot")
 }

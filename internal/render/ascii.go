@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/inchori/geth-state-trie/internal/trie"
 )
@@ -85,13 +86,17 @@ func walkRecursive(
 
 	case *trie.BranchNode:
 		fmt.Printf("%s│   - Has Value: %t\n", indent, len(n.Value) > 0)
-		if len(n.Value) > 0 {
-		}
 
 		if len(remainingPath) == 0 {
-			fmt.Printf("%s│   └── ERROR: Path ended at a Branch node but expected more path.\n", indent)
+			if len(n.Value) > 0 {
+				fmt.Printf("%s└── Branch value reached. Final Value:\n", indent)
+				printFinalValue(finalValue, indent+"    ")
+				return
+			}
+			fmt.Printf("%s│   └── ERROR: Path ended at Branch without value\n", indent)
 			return
 		}
+
 		nextNibbleChar := remainingPath[0]
 		nextNibbleIndex := hexNibbleToIndex(nextNibbleChar)
 		if nextNibbleIndex == -1 {
@@ -101,13 +106,13 @@ func walkRecursive(
 
 		fmt.Printf("%s│   -> Branching: Following path nibble '%c' (index %d)\n", indent, nextNibbleChar, nextNibbleIndex)
 
-		childHashBytes := n.Children[nextNibbleIndex]
-		if len(childHashBytes) == 0 {
+		childBytes := n.Children[nextNibbleIndex]
+		if len(childBytes) == 0 {
 			fmt.Printf("%s│   └── ERROR: Path led to an empty slot in Branch node.\n", indent)
 			return
 		}
 
-		walkRecursive(hexutil.Encode(childHashBytes), remainingPath[1:], proofMap, finalValue, indent+"│   ")
+		followChild(childBytes, remainingPath[1:], proofMap, finalValue, indent+"│   ")
 
 	case *trie.ExtensionNode:
 		sharedNibbles, _ := decodeHPNibbles(n.SharedPath)
@@ -119,9 +124,100 @@ func walkRecursive(
 		}
 
 		fmt.Printf("%s│   -> Following Extension Node...\n", indent)
-		nextNodeHash := n.NextNode
 		nextRemainingPath := remainingPath[len(sharedNibbles):]
-		walkRecursive(hexutil.Encode(nextNodeHash), nextRemainingPath, proofMap, finalValue, indent+"│   ")
+		followChild(n.NextNode, nextRemainingPath, proofMap, finalValue, indent+"│   ")
+
+	case *trie.LeafNode:
+		pathEnd, _ := decodeHPNibbles(n.PathEnd)
+		fmt.Printf("%s│   - Final Path: '%s'\n", indent, pathEnd)
+
+		if remainingPath != pathEnd {
+			fmt.Printf("%s│   └── ERROR: Path mismatch. Expected final path '%s' but remaining path is '%s'\n", indent, pathEnd, remainingPath)
+			return
+		}
+
+		fmt.Printf("%s└── Leaf Reached. Final Value:\n", indent)
+		printFinalValue(finalValue, indent+"    ")
+	}
+}
+
+func followChild(childBytes []byte, remainingPath string, proofMap map[string]trie.RenderNodeData, finalValue interface{}, indent string) {
+	switch len(childBytes) {
+	case 32:
+		childKey := hexutil.Encode(childBytes)
+		walkRecursive(childKey, remainingPath, proofMap, finalValue, indent)
+	case 0:
+		fmt.Printf("%s└── ERROR: Empty child reference\n", indent)
+	default:
+		childKey := hexutil.Encode(childBytes)
+		if _, ok := proofMap[childKey]; ok {
+			walkRecursive(childKey, remainingPath, proofMap, finalValue, indent)
+			return
+		}
+
+		hashKey := crypto.Keccak256Hash(childBytes).Hex()
+		if _, ok := proofMap[hashKey]; ok {
+			walkRecursive(hashKey, remainingPath, proofMap, finalValue, indent)
+			return
+		}
+
+		inlineNode, err := trie.ParseNode(childBytes)
+		if err != nil {
+			fmt.Printf("%s└── ERROR: Failed to parse inline node: %v\n", indent, err)
+			return
+		}
+
+		fmt.Printf("%s├── INLINE NODE (RLP < 32 bytes)\n", indent)
+		fmt.Printf("%s│   Type: %s\n", indent, inlineNode.Type())
+
+		walkRecursiveInline(inlineNode, remainingPath, proofMap, finalValue, indent)
+	}
+}
+
+func walkRecursiveInline(node trie.Node, remainingPath string, proofMap map[string]trie.RenderNodeData, finalValue interface{}, indent string) {
+	switch n := node.(type) {
+	case *trie.BranchNode:
+		fmt.Printf("%s│   - Has Value: %t\n", indent, len(n.Value) > 0)
+
+		if len(remainingPath) == 0 {
+			if len(n.Value) > 0 {
+				fmt.Printf("%s└── Branch value reached. Final Value:\n", indent)
+				printFinalValue(finalValue, indent+"    ")
+				return
+			}
+			fmt.Printf("%s│   └── ERROR: Path ended at Branch without value\n", indent)
+			return
+		}
+
+		nextNibbleChar := remainingPath[0]
+		nextNibbleIndex := hexNibbleToIndex(nextNibbleChar)
+		if nextNibbleIndex == -1 {
+			fmt.Printf("%s│   └── ERROR: Invalid path nibble '%c'\n", indent, nextNibbleChar)
+			return
+		}
+
+		fmt.Printf("%s│   -> Branching: Following path nibble '%c' (index %d)\n", indent, nextNibbleChar, nextNibbleIndex)
+
+		childBytes := n.Children[nextNibbleIndex]
+		if len(childBytes) == 0 {
+			fmt.Printf("%s│   └── ERROR: Path led to an empty slot in Branch node.\n", indent)
+			return
+		}
+
+		followChild(childBytes, remainingPath[1:], proofMap, finalValue, indent+"│   ")
+
+	case *trie.ExtensionNode:
+		sharedNibbles, _ := decodeHPNibbles(n.SharedPath)
+		fmt.Printf("%s│   - Shared Path: '%s'\n", indent, sharedNibbles)
+
+		if !strings.HasPrefix(remainingPath, sharedNibbles) {
+			fmt.Printf("%s│   └── ERROR: Path mismatch. Expected prefix '%s' but got '%s'\n", indent, sharedNibbles, remainingPath)
+			return
+		}
+
+		fmt.Printf("%s│   -> Following Extension Node...\n", indent)
+		nextRemainingPath := remainingPath[len(sharedNibbles):]
+		followChild(n.NextNode, nextRemainingPath, proofMap, finalValue, indent+"│   ")
 
 	case *trie.LeafNode:
 		pathEnd, _ := decodeHPNibbles(n.PathEnd)
