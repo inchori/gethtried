@@ -2,8 +2,11 @@ package cli
 
 import (
 	"context"
+	"encoding/hex"
 	"log"
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/inchori/geth-state-trie/internal/geth"
@@ -32,38 +35,28 @@ var storageCmd = &cobra.Command{
 			log.Fatalf("No storage proof returned for slot %d", storageSlot)
 		}
 
-		log.Printf("Successfully got %d proof nodes for storage slot %d of account %s at block %d.\n", len(storageProof.StorageProof[0].Proof), storageSlot, accountAddress, blockHeight)
+		startRootKey := storageProof.StorageHash
 
-		//var parsedNodeList []trie.Node
-		var renderNodeList []trie.RenderNode
-		//var finalStorageValue []byte
-		var finalValue interface{}
+		slotKey := common.LeftPadBytes(big.NewInt(storageSlot).Bytes(), 32)
+		targetPathHash := crypto.Keccak256Hash(slotKey)
+		targetPathNibbles := hex.EncodeToString(targetPathHash.Bytes())
 
-		storageProofPath := storageProof.StorageProof[0].Proof
+		proofMap := make(map[string]trie.RenderNodeData)
+		storagePathNodes := storageProof.StorageProof[0].Proof
+		var finalStorageValue []byte
 
-		for i, nodeHexStringBytes := range storageProofPath {
-			rawData, err := hexutil.Decode(nodeHexStringBytes)
-			if err != nil {
-				log.Fatalf("Node %d: failed to decode hex string from proof: %v", i, err)
-			}
+		for _, nodeHexBytes := range storagePathNodes {
+			rawData, _ := hexutil.Decode(nodeHexBytes)
+			nodeKey := crypto.Keccak256Hash(rawData)
+			parsedNode, _ := trie.ParseNode(rawData)
 
-			nodeKey := crypto.Keccak256(rawData)
+			proofMap[nodeKey.String()] = trie.RenderNodeData{Key: nodeKey, Node: parsedNode}
 
-			parsedNode, err := trie.ParseNode(rawData)
-			if err != nil {
-				log.Fatalf("Node %d: failed to parse RLP data: %v", i, err)
-			}
-
-			renderNodeList = append(renderNodeList, trie.RenderNode{
-				Key:  nodeKey,
-				Node: parsedNode,
-			})
-
-			if leafNode, ok := parsedNode.(*trie.LeafNode); ok {
-				finalValue = leafNode.Value
+			if leaf, ok := parsedNode.(*trie.LeafNode); ok {
+				finalStorageValue = leaf.Value
 			}
 		}
-		render.RenderProofPath(renderNodeList, finalValue)
+		render.RenderLogicalPath(startRootKey, targetPathNibbles, proofMap, finalStorageValue)
 	},
 }
 
