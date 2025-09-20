@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -17,15 +19,54 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var storageSlot int64
+var storageSlotStr string
 
 var storageCmd = &cobra.Command{
 	Use:   "storage",
 	Short: "Visualize the storage trie for a specific account at a specific block height",
 	Run: func(cmd *cobra.Command, args []string) {
+		if !common.IsHexAddress(accountAddress) {
+			log.Fatalf("Invalid account address format: %s", accountAddress)
+		}
+
+		if blockHeight < 0 {
+			log.Fatalf("Block height must be non-negative: %d", blockHeight)
+		}
+
+		var storageSlot int64
+		if strings.HasPrefix(storageSlotStr, "0x") || strings.HasPrefix(storageSlotStr, "0X") {
+			slotBig, ok := new(big.Int).SetString(storageSlotStr[2:], 16)
+			if !ok {
+				log.Fatalf("Invalid hex storage slot: %s", storageSlotStr)
+			}
+			if !slotBig.IsInt64() {
+				log.Fatalf("Storage slot too large: %s", storageSlotStr)
+			}
+			storageSlot = slotBig.Int64()
+		} else {
+			var err error
+			storageSlot, err = strconv.ParseInt(storageSlotStr, 10, 64)
+			if err != nil {
+				log.Fatalf("Invalid storage slot: %s", storageSlotStr)
+			}
+		}
+
+		if storageSlot < 0 {
+			log.Fatalf("Storage slot must be non-negative: %d", storageSlot)
+		}
+
 		client, err := geth.NewEthClient(rpcURL)
 		if err != nil {
 			log.Fatalf("Failed to initialize eth client: %v", err)
+		}
+
+		latestBlock, err := client.GetBlockByNumber(context.Background(), -1)
+		if err != nil {
+			log.Fatalf("Failed to get latest block: %v", err)
+		}
+
+		if uint64(blockHeight) > latestBlock.NumberU64() {
+			log.Fatalf("Block height %d exceeds latest block %d", blockHeight, latestBlock.NumberU64())
 		}
 
 		storageProof, err := client.GetStorageProof(context.Background(), accountAddress, storageSlot, blockHeight)
@@ -91,7 +132,7 @@ var storageCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(storageCmd)
-	storageCmd.Flags().Int64Var(&storageSlot, "slot", 0, "Storage slot (required)")
+	storageCmd.Flags().StringVar(&storageSlotStr, "slot", "0", "Storage slot (decimal or hex with 0x prefix)")
 	storageCmd.MarkFlagRequired("block-height")
 	storageCmd.MarkFlagRequired("account-address")
 	storageCmd.MarkFlagRequired("slot")

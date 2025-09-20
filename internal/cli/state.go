@@ -37,9 +37,26 @@ var stateCmd = &cobra.Command{
 	Use:   "state",
 	Short: "Visualize the state trie for a specific account at a specific block height",
 	Run: func(cmd *cobra.Command, args []string) {
+		if !common.IsHexAddress(accountAddress) {
+			log.Fatalf("Invalid account address format: %s", accountAddress)
+		}
+
+		if blockHeight < 0 {
+			log.Fatalf("Block height must be non-negative: %d", blockHeight)
+		}
+
 		client, err := geth.NewEthClient(rpcURL)
 		if err != nil {
 			log.Fatalf("Failed to initialize eth client: %v", err)
+		}
+
+		latestBlock, err := client.GetBlockByNumber(context.Background(), -1)
+		if err != nil {
+			log.Fatalf("Failed to get latest block: %v", err)
+		}
+
+		if uint64(blockHeight) > latestBlock.NumberU64() {
+			log.Fatalf("Block height %d exceeds latest block %d", blockHeight, latestBlock.NumberU64())
 		}
 
 		block, err := client.GetBlockByNumber(context.Background(), blockHeight)

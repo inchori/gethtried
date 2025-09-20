@@ -15,9 +15,22 @@ var receiptCmd = &cobra.Command{
 	Use:   "receipt",
 	Short: "Visualize the transaction receipt trie for a specific block height",
 	Run: func(cmd *cobra.Command, args []string) {
+		if blockHeight < 0 {
+			log.Fatalf("Block height must be non-negative: %d", blockHeight)
+		}
+
 		client, err := geth.NewEthClient(rpcURL)
 		if err != nil {
 			log.Fatalf("Failed to initialize eth client: %v", err)
+		}
+
+		latestBlock, err := client.GetBlockByNumber(context.Background(), -1)
+		if err != nil {
+			log.Fatalf("Failed to get latest block: %v", err)
+		}
+
+		if uint64(blockHeight) > latestBlock.NumberU64() {
+			log.Fatalf("Block height %d exceeds latest block %d", blockHeight, latestBlock.NumberU64())
 		}
 
 		block, err := client.GetBlockByNumber(context.Background(), blockHeight)
