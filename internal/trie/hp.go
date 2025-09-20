@@ -7,19 +7,13 @@ func DecodeHP(path []byte) (string, bool) {
 		return "", false
 	}
 
-	firstByte := path[0]
-	firstNibble := firstByte >> 4
-	isLeaf := firstNibble == 2 || firstNibble == 3
+	flagNibble := path[0] >> 4
+	isLeaf := flagNibble == 2 || flagNibble == 3
 
-	nibbles := ""
-	if firstNibble%2 == 1 {
-		nibbles = string(hex.EncodeToString([]byte{firstByte & 0x0F}))
-		path = path[1:]
+	hexPath := hex.EncodeToString(path)
+	if flagNibble%2 == 1 {
+		return hexPath[1:], isLeaf
 	} else {
-		nibbles = ""
-		path = path[1:]
+		return hexPath[2:], isLeaf
 	}
-
-	nibbles += hex.EncodeToString(path)
-	return nibbles, isLeaf
 }

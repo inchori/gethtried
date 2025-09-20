@@ -1,7 +1,6 @@
 package render
 
 import (
-	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
@@ -115,7 +114,7 @@ func walkRecursive(
 		followChild(childBytes, remainingPath[1:], proofMap, finalValue, indent+"│   ")
 
 	case *trie.ExtensionNode:
-		sharedNibbles, _ := decodeHPNibbles(n.SharedPath)
+		sharedNibbles, _ := trie.DecodeHP(n.SharedPath)
 		fmt.Printf("%s│   - Shared Path: '%s'\n", indent, sharedNibbles)
 
 		if !strings.HasPrefix(remainingPath, sharedNibbles) {
@@ -128,7 +127,7 @@ func walkRecursive(
 		followChild(n.NextNode, nextRemainingPath, proofMap, finalValue, indent+"│   ")
 
 	case *trie.LeafNode:
-		pathEnd, _ := decodeHPNibbles(n.PathEnd)
+		pathEnd, _ := trie.DecodeHP(n.PathEnd)
 		fmt.Printf("%s│   - Final Path: '%s'\n", indent, pathEnd)
 
 		if remainingPath != pathEnd {
@@ -207,7 +206,7 @@ func walkRecursiveInline(node trie.Node, remainingPath string, proofMap map[stri
 		followChild(childBytes, remainingPath[1:], proofMap, finalValue, indent+"│   ")
 
 	case *trie.ExtensionNode:
-		sharedNibbles, _ := decodeHPNibbles(n.SharedPath)
+		sharedNibbles, _ := trie.DecodeHP(n.SharedPath)
 		fmt.Printf("%s│   - Shared Path: '%s'\n", indent, sharedNibbles)
 
 		if !strings.HasPrefix(remainingPath, sharedNibbles) {
@@ -220,7 +219,7 @@ func walkRecursiveInline(node trie.Node, remainingPath string, proofMap map[stri
 		followChild(n.NextNode, nextRemainingPath, proofMap, finalValue, indent+"│   ")
 
 	case *trie.LeafNode:
-		pathEnd, _ := decodeHPNibbles(n.PathEnd)
+		pathEnd, _ := trie.DecodeHP(n.PathEnd)
 		fmt.Printf("%s│   - Final Path: '%s'\n", indent, pathEnd)
 
 		if remainingPath != pathEnd {
@@ -250,21 +249,6 @@ func printFinalValue(finalValue interface{}, indent string) {
 
 	default:
 		fmt.Printf("%s- Unknown Value Type\n", indent)
-	}
-}
-
-func decodeHPNibbles(path []byte) (string, bool) {
-	if len(path) == 0 {
-		return "", false
-	}
-	flagNibble := path[0] >> 4
-	isLeaf := flagNibble == 2 || flagNibble == 3
-
-	hexPath := hex.EncodeToString(path)
-	if flagNibble%2 == 1 {
-		return hexPath[1:], isLeaf
-	} else {
-		return hexPath[2:], isLeaf
 	}
 }
 
