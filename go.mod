@@ -1,6 +1,8 @@
-module github.com/inchori/geth-state-trie
+module github.com/inchori/gethtried
 
-go 1.25
+go 1.24.0
+
+toolchain go1.24.1
 
 require (
 	github.com/ethereum/go-ethereum v1.16.3

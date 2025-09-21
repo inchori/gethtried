@@ -13,9 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	ethtrie "github.com/ethereum/go-ethereum/trie"
-	"github.com/inchori/geth-state-trie/internal/geth"
-	"github.com/inchori/geth-state-trie/internal/render"
-	"github.com/inchori/geth-state-trie/internal/trie"
+	"github.com/inchori/gethtried/internal/geth"
+	"github.com/inchori/gethtried/internal/render"
+	"github.com/inchori/gethtried/internal/trie"
 	"github.com/spf13/cobra"
 )
 

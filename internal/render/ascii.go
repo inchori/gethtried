@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/inchori/geth-state-trie/internal/trie"
+	"github.com/inchori/gethtried/internal/trie"
 )
 
 func RenderProofPath(pathNodes []trie.RenderNode, value interface{}) {

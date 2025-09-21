@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/inchori/geth-state-trie/internal/cli"
+	"github.com/inchori/gethtried/internal/cli"
 )
 
 func main() {

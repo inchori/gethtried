@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/inchori/geth-state-trie/internal/geth"
+	"github.com/inchori/gethtried/internal/geth"
 	"github.com/spf13/cobra"
 )
 

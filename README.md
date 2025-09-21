@@ -91,10 +91,6 @@ Target Path: a7f9365b9c4b8b8e8f5c8a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0
 │   │       - CodeHash:    0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470
 ```
 
-## How It Works
-
-The tool fetches Merkle proofs via RPC, parses RLP-encoded trie nodes, and visualizes the path traversal through the trie structure. It correctly handles both 32-byte hash references and inline RLP nodes.
-
 ## License
 
 MIT License - see LICENSE file for details.
