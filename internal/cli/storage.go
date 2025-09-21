@@ -142,7 +142,7 @@ func runStorageCommand() error {
 func init() {
 	rootCmd.AddCommand(storageCmd)
 	storageCmd.Flags().StringVar(&storageSlotStr, "slot", "0", "Storage slot (decimal or hex with 0x prefix)")
-	storageCmd.MarkFlagRequired("block-height")
-	storageCmd.MarkFlagRequired("account-address")
-	storageCmd.MarkFlagRequired("slot")
+	_ = storageCmd.MarkFlagRequired("block-height")
+	_ = storageCmd.MarkFlagRequired("account-address")
+	_ = storageCmd.MarkFlagRequired("slot")
 }

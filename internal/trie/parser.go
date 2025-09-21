@@ -34,17 +34,18 @@ func ParseNode(rawData []byte) (Node, error) {
 		}
 
 		firstNibble := pathBytes[0] >> 4
-		if firstNibble == 0 || firstNibble == 1 {
+		switch firstNibble {
+		case 0, 1:
 			return &ExtensionNode{
 				SharedPath: pathBytes,
 				NextNode:   valueOrHash,
 			}, nil
-		} else if firstNibble == 2 || firstNibble == 3 {
+		case 2, 3:
 			return &LeafNode{
 				PathEnd: pathBytes,
 				Value:   valueOrHash,
 			}, nil
-		} else {
+		default:
 			return nil, fmt.Errorf("invalid hex-prefix nibble: %x", firstNibble)
 		}
 	default:

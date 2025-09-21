@@ -71,5 +71,5 @@ func runReceiptCommand() error {
 
 func init() {
 	rootCmd.AddCommand(receiptCmd)
-	receiptCmd.MarkFlagRequired("block-height")
+	_ = receiptCmd.MarkFlagRequired("block-height")
 }

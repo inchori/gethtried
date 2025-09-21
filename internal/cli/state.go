@@ -158,6 +158,6 @@ func runStateCommand() error {
 
 func init() {
 	rootCmd.AddCommand(stateCmd)
-	stateCmd.MarkFlagRequired("block-height")
-	stateCmd.MarkFlagRequired("account-address")
+	_ = stateCmd.MarkFlagRequired("block-height")
+	_ = stateCmd.MarkFlagRequired("account-address")
 }

@@ -68,5 +68,5 @@ func runTxCommand() error {
 
 func init() {
 	rootCmd.AddCommand(txCmd)
-	txCmd.MarkFlagRequired("block-height")
+	_ = txCmd.MarkFlagRequired("block-height")
 }
