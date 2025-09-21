@@ -13,7 +13,7 @@ A CLI tool for visualizing Ethereum's Merkle Patricia Tries from an archive node
 
 ## Requirements
 
-- Go 1.22+
+- Go 1.24+
 - Geth-compatible archive node RPC endpoint
 
 ## Installation
